@@ -17,7 +17,7 @@ var funcMap = template.FuncMap{
 	//add template funcs here as needed
 }
 
-var templates = template.Must(template.New("*").Funcs(funcMap).ParseGlob("./web/html/*.html"))
+var templates = template.Must(template.New("*").Funcs(funcMap).ParseGlob("../web/html/*.html"))
 
 func myRecoverFunc() {
 	if err := recover(); err != nil {
@@ -63,6 +63,22 @@ func handleHome(w http.ResponseWriter, r *http.Request) {
 	renderTemplate(w, "home", user)
 }
 
+func validate(w http.ResponseWriter, r *http.Request) {
+	defer myRecoverFunc()
+	//first, check to see if there's already a "logged-in" cookie, in case someone tries to go to the login page directly
+	//probably need to use a sync pool to keep the counter alive here
+	c := &tools.Counter{}
+	//c.Reset() //for use with syncpool
+	err := tools.CheckPassword(r, c)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusFound)
+		return
+	}
+	tools.Login(w)
+	path := "/home/" + r.FormValue("username")
+	http.Redirect(w, r, path, http.StatusFound)
+}
+
 func main() {
 	/*
 		//UNCOMMENT TO ENABLE LOGGING TO LOG.TXT RATHER THAN STD.OUT
@@ -78,6 +94,7 @@ func main() {
 	http.HandleFunc("/", handleIndex)
 	http.HandleFunc("/login/", handleLogin)
 	http.HandleFunc("/home/", handleHome)
+	http.HandleFunc("/validate", validate)
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }

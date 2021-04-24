@@ -17,6 +17,10 @@ func (u *User) Save() error {
 	return nil
 }
 
+func NewUser() *User {
+	return &User{}
+}
+
 func LoadUser(user string) *User {
 	//json to load user, yay
 	//return user, not nil!

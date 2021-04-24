@@ -1,0 +1,73 @@
+package tools
+
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+)
+
+type Counter struct {
+	Count int
+	Max   int
+}
+
+//Counter counts the number of login attempts a person has made
+func (c *Counter) CountUp() error {
+	c.Count++
+	if c.Count == c.Max {
+		return errors.New("Maximum number of attempts reached. Account locked for 1 minute")
+	}
+	return nil
+}
+
+//Resest sets the counter back to zero
+func (c *Counter) Reset() {
+	c.Count = 0
+}
+
+//CookieSetter creates a new login cookie, and automatically sets it
+func Login(w http.ResponseWriter) { //this should eventually return an error
+	cookie := http.Cookie{
+		Name:     "session",
+		Value:    "logged in",
+		MaxAge:   60 * 5, //5 minutes for our testing purposes
+		HttpOnly: true,
+	}
+	http.SetCookie(w, &cookie)
+}
+
+//LogOut deletes the cookie set by Login
+func LogOut(w http.ResponseWriter) {
+	cookie := http.Cookie{
+		Name:     "session",
+		Value:    "",
+		MaxAge:   0, //immediately expire cookie
+		HttpOnly: true,
+	}
+	http.SetCookie(w, &cookie)
+}
+
+func CheckPassword(r *http.Request, c *Counter) error {
+	username := r.FormValue("username")
+	password := r.FormValue("password")
+	userpath := "../internal/storage/user-storage/" + username + ".json"
+	file, err := ioutil.ReadFile(userpath)
+	if err != nil {
+		return err
+	}
+	user := NewUser()
+	err = json.Unmarshal([]byte(file), user)
+	if err != nil {
+		return err
+	}
+	if password != user.Password {
+		err = c.CountUp()
+		if err != nil {
+			return err
+		}
+		return fmt.Errorf("Incorrect password. %v more attempts until account is locked.", c.Count)
+	}
+	return nil
+}
