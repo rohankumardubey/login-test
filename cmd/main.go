@@ -79,10 +79,6 @@ func handleNewUser(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Hello, creating a new user here!")
 	username := r.FormValue("username")
 	password := r.FormValue("password")
-	fmt.Println(username)
-	fmt.Println(password)
-	fmt.Println(r.FormValue("password"))
-	fmt.Println(r.FormValue("confirm-password"))
 	user := tools.NewUser(username, password)
 	err := user.Save()
 	if err != nil {
@@ -97,7 +93,7 @@ func handleHome(w http.ResponseWriter, r *http.Request) {
 	_, err := r.Cookie("session")
 	if err != nil {
 		log.Println(err)
-		http.Error(w, "Access denied", 403)
+		http.Error(w, "Access denied", 403) //should I redirect here? Absolutely. But this is more fun
 		return
 	}
 	title := r.URL.Path[len("/home/"):]
@@ -111,17 +107,15 @@ func handleHome(w http.ResponseWriter, r *http.Request) {
 func handleValidate(w http.ResponseWriter, r *http.Request) {
 	defer myRecoverFunc()
 	//probably need to use a sync pool to keep the counter alive here
-	c := &tools.Counter{} //this is currently useless, since I haven't decided yet how to pass it between login and validate
+	c := &tools.Counter{} //this is currently useless, since I haven't decided yet how to pass it between login and validate. But currently this does nothing
 	//c.Reset() //for use with syncpool
 	err := tools.CheckPassword(r, c) //is this hiding complexity? Should I establish form values as variables before this point?
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusFound)
 		return
 	}
-	fmt.Println(r.FormValue("username"))
 	tools.Login(w, r.FormValue("username"))
 	path := "/home/" + r.FormValue("username")
-	fmt.Println(path)
 	http.Redirect(w, r, path, http.StatusFound)
 }
 
@@ -133,7 +127,7 @@ func main() {
 		log.SetOutput(f)
 	*/
 
-	fmt.Println("Now serving on port 8080")
+	log.Println("Now serving on port 8080")
 	static := http.StripPrefix("/static/", http.FileServer(http.Dir("web/static/")))
 
 	http.Handle("/static/", static)

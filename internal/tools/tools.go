@@ -2,7 +2,6 @@ package tools
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 )
 
@@ -19,16 +18,13 @@ type User struct {
 }
 
 func (u *User) Save() error {
-	fmt.Println("saving user")
 	filename := "../internal/storage/user-storage/" + u.Name + ".json"
 	file, err := json.MarshalIndent(u, "", " ")
 	if err != nil {
-		fmt.Println("Error marshalling json")
 		return err
 	}
 	err = ioutil.WriteFile(filename, []byte(file), 0644)
 	if err != nil {
-		fmt.Println("Error writing file to disk")
 		return err
 	}
 	return nil
@@ -53,10 +49,10 @@ func LoadUser(user string) (*User, error) {
 }
 
 type EmptyPage struct {
-	Title string //for html title purposes
+	Title string //for html title purposes. But really it's useless
 }
 
-//this only exists as my crappy, hacky workaround to let this be used as type Page
+//this only exists as my crappy, hacky workaround to let this type fulfill the Page interface
 func (e *EmptyPage) Save() error {
 	return nil
 }
