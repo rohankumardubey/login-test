@@ -44,12 +44,12 @@ func LoadUser(user string) (*User, error) {
 	if err != nil {
 		return nil, err
 	}
-	a := User{}
+	a := &User{}
 	err = json.Unmarshal(file, a)
 	if err != nil {
 		return nil, err
 	}
-	return &a, nil
+	return a, nil
 }
 
 type EmptyPage struct {

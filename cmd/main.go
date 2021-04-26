@@ -5,7 +5,6 @@ import (
 	"html/template"
 	"log"
 	"net/http"
-	"time"
 
 	"github.com/Jonny-Burkholder/login-test-2/internal/tools"
 )
@@ -48,8 +47,10 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 func handleLogin(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("session") //check to see if the user already has an active session
 	if err != nil {                    //if there is no session cookie, redirect user to login
+		log.Println(err)
 		page := &tools.EmptyPage{Title: "Account Login"} //This is totally unnecessary, but it fulfills the template pattern
 		renderTemplate(w, "login", page)
+		return
 	}
 	//if there is a login cookie, redirect user to homepage
 	path := "/home/" + cookie.Value
@@ -64,8 +65,7 @@ func handleLogout(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Println(cookie)
 	log.Println("Logging user out")
-	tools.LogOut(w)
-	time.Sleep(1)
+	tools.LogOut(w, cookie)
 	http.Redirect(w, r, "/login", http.StatusFound)
 }
 
@@ -101,7 +101,10 @@ func handleHome(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	title := r.URL.Path[len("/home/"):]
-	user := tools.LoadUser(title)
+	user, err := tools.LoadUser(title)
+	if err != nil {
+		log.Panic(err)
+	}
 	renderTemplate(w, "home", user)
 }
 
@@ -115,8 +118,10 @@ func handleValidate(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusFound)
 		return
 	}
-	tools.Login(w, r.FormValue("password"))
+	fmt.Println(r.FormValue("username"))
+	tools.Login(w, r.FormValue("username"))
 	path := "/home/" + r.FormValue("username")
+	fmt.Println(path)
 	http.Redirect(w, r, path, http.StatusFound)
 }
 

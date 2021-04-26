@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"time"
 )
 
 type Counter struct {
@@ -39,14 +40,10 @@ func Login(w http.ResponseWriter, s string) { //this should eventually return an
 }
 
 //LogOut deletes the cookie set by Login
-func LogOut(w http.ResponseWriter) {
-	cookie := http.Cookie{
-		Name: "session",
-		//Value:    "",
-		MaxAge:   0, //immediately expire cookie
-		HttpOnly: true,
-	}
-	http.SetCookie(w, &cookie)
+func LogOut(w http.ResponseWriter, c *http.Cookie) {
+	c.Expires = time.Now()
+	c.MaxAge = -1
+	http.SetCookie(w, c)
 }
 
 func CheckPassword(r *http.Request, c *Counter) error {
