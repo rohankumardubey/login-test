@@ -1,5 +1,11 @@
 package tools
 
+import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+)
+
 //Page is anything that can be used to render an html template in our server. In this particular
 //case, that will include users as well as pretty much blank pages
 type Page interface {
@@ -13,18 +19,37 @@ type User struct {
 }
 
 func (u *User) Save() error {
-	//save user
+	fmt.Println("saving user")
+	filename := "../internal/storage/user-storage/" + u.Name + ".json"
+	file, err := json.MarshalIndent(u, "", " ")
+	if err != nil {
+		fmt.Println("Error marshalling json")
+		return err
+	}
+	err = ioutil.WriteFile(filename, []byte(file), 0644)
+	if err != nil {
+		fmt.Println("Error writing file to disk")
+		return err
+	}
 	return nil
 }
 
-func NewUser() *User {
-	return &User{}
+func NewUser(name, password string) *User {
+	return &User{Name: name, Password: password}
 }
 
-func LoadUser(user string) *User {
-	//json to load user, yay
-	//return user, not nil!
-	return nil
+func LoadUser(user string) (*User, error) {
+	filepath := "../internal/storage/user-storage/" + user + ".json"
+	file, err := ioutil.ReadFile(filepath)
+	if err != nil {
+		return nil, err
+	}
+	a := User{}
+	err = json.Unmarshal(file, a)
+	if err != nil {
+		return nil, err
+	}
+	return &a, nil
 }
 
 type EmptyPage struct {

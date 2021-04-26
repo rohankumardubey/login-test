@@ -28,10 +28,10 @@ func (c *Counter) Reset() {
 }
 
 //CookieSetter creates a new login cookie, and automatically sets it
-func Login(w http.ResponseWriter) { //this should eventually return an error
+func Login(w http.ResponseWriter, s string) { //this should eventually return an error
 	cookie := http.Cookie{
 		Name:     "session",
-		Value:    "logged in",
+		Value:    s,
 		MaxAge:   60 * 5, //5 minutes for our testing purposes
 		HttpOnly: true,
 	}
@@ -41,8 +41,8 @@ func Login(w http.ResponseWriter) { //this should eventually return an error
 //LogOut deletes the cookie set by Login
 func LogOut(w http.ResponseWriter) {
 	cookie := http.Cookie{
-		Name:     "session",
-		Value:    "",
+		Name: "session",
+		//Value:    "",
 		MaxAge:   0, //immediately expire cookie
 		HttpOnly: true,
 	}
@@ -57,7 +57,7 @@ func CheckPassword(r *http.Request, c *Counter) error {
 	if err != nil {
 		return err
 	}
-	user := NewUser()
+	user := &User{}
 	err = json.Unmarshal([]byte(file), user)
 	if err != nil {
 		return err

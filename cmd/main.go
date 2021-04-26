@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/Jonny-Burkholder/login-test-2/internal/tools"
 )
@@ -45,36 +46,76 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleLogin(w http.ResponseWriter, r *http.Request) {
-	//check cookies to see if user is already logged in
-	//if so, redirect them to home/user
-	//if not, execute normally
-	title := r.URL.Path[len("/"):]
-	page := &tools.EmptyPage{Title: title}
-	renderTemplate(w, "login", page)
+	cookie, err := r.Cookie("session") //check to see if the user already has an active session
+	if err != nil {                    //if there is no session cookie, redirect user to login
+		page := &tools.EmptyPage{Title: "Account Login"} //This is totally unnecessary, but it fulfills the template pattern
+		renderTemplate(w, "login", page)
+	}
+	//if there is a login cookie, redirect user to homepage
+	path := "/home/" + cookie.Value
+	http.Redirect(w, r, path, http.StatusFound)
+}
+
+func handleLogout(w http.ResponseWriter, r *http.Request) {
+	defer myRecoverFunc()
+	cookie, err := r.Cookie("session")
+	if err != nil {
+		log.Panic(err)
+	}
+	fmt.Println(cookie)
+	log.Println("Logging user out")
+	tools.LogOut(w)
+	time.Sleep(1)
+	http.Redirect(w, r, "/login", http.StatusFound)
+}
+
+func handleCreateAccount(w http.ResponseWriter, r *http.Request) {
+	page := &tools.EmptyPage{Title: "Create Account"} //this should be calling a function and EmptyPage shouldn't be exported
+	renderTemplate(w, "create-account", page)
+}
+
+func handleNewUser(w http.ResponseWriter, r *http.Request) {
+	defer myRecoverFunc()
+	fmt.Println("Hello, creating a new user here!")
+	username := r.FormValue("username")
+	password := r.FormValue("password")
+	fmt.Println(username)
+	fmt.Println(password)
+	fmt.Println(r.FormValue("password"))
+	fmt.Println(r.FormValue("confirm-password"))
+	user := tools.NewUser(username, password)
+	err := user.Save()
+	if err != nil {
+		log.Panic(err)
+	}
+	tools.Login(w, username)
+	path := "/home/" + username
+	http.Redirect(w, r, path, http.StatusFound)
 }
 
 func handleHome(w http.ResponseWriter, r *http.Request) {
-	//somewhere in this process, check the cookie to see if the user is logged in
-	//if not, either serve 403 forbidden, or just redirect to login
-	//I mean honestly, I never see 403 anymore, I always just get redirected. But hey, this is my
-	//app, and what fun is it if I don't get to serve an error code every now and then, huh?
+	_, err := r.Cookie("session")
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "Access denied", 403)
+		return
+	}
 	title := r.URL.Path[len("/home/"):]
 	user := tools.LoadUser(title)
 	renderTemplate(w, "home", user)
 }
 
-func validate(w http.ResponseWriter, r *http.Request) {
+func handleValidate(w http.ResponseWriter, r *http.Request) {
 	defer myRecoverFunc()
-	//first, check to see if there's already a "logged-in" cookie, in case someone tries to go to the login page directly
 	//probably need to use a sync pool to keep the counter alive here
-	c := &tools.Counter{}
+	c := &tools.Counter{} //this is currently useless, since I haven't decided yet how to pass it between login and validate
 	//c.Reset() //for use with syncpool
-	err := tools.CheckPassword(r, c)
+	err := tools.CheckPassword(r, c) //is this hiding complexity? Should I establish form values as variables before this point?
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusFound)
 		return
 	}
-	tools.Login(w)
+	tools.Login(w, r.FormValue("password"))
 	path := "/home/" + r.FormValue("username")
 	http.Redirect(w, r, path, http.StatusFound)
 }
@@ -94,7 +135,10 @@ func main() {
 	http.HandleFunc("/", handleIndex)
 	http.HandleFunc("/login/", handleLogin)
 	http.HandleFunc("/home/", handleHome)
-	http.HandleFunc("/validate", validate)
+	http.HandleFunc("/validate", handleValidate)
+	http.HandleFunc("/logout", handleLogout)
+	http.HandleFunc("/new-user", handleNewUser)
+	http.HandleFunc("/create-account", handleCreateAccount)
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }

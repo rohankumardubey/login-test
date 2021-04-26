@@ -1,0 +1,5 @@
+ - There should probably on server be a giant hashmap of user IDs corresponding to filenames, or
+ whatever the secure version of something like that is. That way someone can't finagle their way
+ into somebody's data just by looking for their username +.json, and the cookie can then also just
+ store an integer instead of a username. Of course, using a real database would also help with that,
+ but hey, I like json, it's easy and super convenient for small projects
