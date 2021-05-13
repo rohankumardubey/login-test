@@ -41,6 +41,7 @@ type Sessions struct {
 type Session struct {
 	Mux      sync.Mutex
 	Username string
+	ID       uint64
 	Counter  *counter
 	Alive    bool
 }
