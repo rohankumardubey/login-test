@@ -10,7 +10,7 @@ import (
 //information into a counter cookie instead
 var counterpool = sync.Pool{
 	New: func() interface{} {
-		return new(&counter{})
+		return &counter{}
 	},
 }
 

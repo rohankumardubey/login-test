@@ -1,6 +1,7 @@
 package biscuit
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 )
@@ -9,7 +10,7 @@ import (
 func SetLogin(w http.ResponseWriter, s *Session) { //this should eventually return an error
 	cookie := http.Cookie{
 		Name:     sessionCookieName,
-		Value:    string(s.ID),
+		Value:    fmt.Sprint(s.ID),
 		MaxAge:   SessionLength, //Each client should decide how session length should be handled
 		HttpOnly: true,
 	}
